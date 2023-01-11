@@ -1,8 +1,9 @@
 # Mastodon簡単セットアップ
 
-Xserver VPS で Mastodon アプリケーションの初期セットアップを簡単に行えるスクリプトです。
+Xserver VPS で Mastodon の初期セットアップ作業を簡単に行えるスクリプトです。
 
 ## 事前準備
+- Xserver VPS でイメージタイプ Mastodon を選んでサーバーを作成しておく
 - ドメインのAレコードを Xserver VPS のIPアドレスに設定しておく
 - ドメインのTXTレコードを `v=spf1 +ip4:【IPアドレス】 ~all` のように設定しておく
 
