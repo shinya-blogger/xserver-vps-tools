@@ -11,6 +11,8 @@ declare -r RUST_SERVER_DIR="/home/steam/rust_server"
 
 declare -r -a MAPS=("Procedural Map" "Barren" "HapisIsland" "CraggyIsland" "SavasIsland" "SavasIsland_koth")
 
+config_updated=false
+
 function die() {
     local message="$1"
     echo "ERROR: $1"
@@ -19,7 +21,7 @@ function die() {
 
 function check_xserver_vps() {
     if [ ! -d "$RUST_SERVER_DIR" ]; then
-        die "This server is not an Rust Server by Xserver VPS."
+        die "This server is not a Rust Server by Xserver VPS."
     fi
 }
 
@@ -44,6 +46,10 @@ function update_config_oxide() {
         exec_pre_start="ExecPreStart=curl -sSL -o $TEMP_OXIDE_FILE $OXIDE_URL && unzip -o $TEMP_OXIDE_FILE -d $RUST_SERVER_DIR && chown -R steam:steam $RUST_SERVER_DIR/RustDedicated_Data/"
         sed -i -E "/^ExecStart=$/i\\${exec_pre_start}" "$CONFIG_FILE"
     fi
+
+    config_updated=true
+
+    systemctl daemon-reload
 }
 
 function update_config_param() {
@@ -62,6 +68,8 @@ function update_config_param() {
     else
         sed -i -E "s/^(ExecStart=\/.+)$/\\1 $param $value/" "$CONFIG_FILE"
     fi
+
+    config_updated=true
 
     systemctl daemon-reload
 }
@@ -154,7 +162,28 @@ function activate_oxide() {
     done
 }
 
+function quit() {
+    if [ "$config_updated" == "true" ]; then
+        restart_server
+    fi
+
+    exit 0
+}
+
+function restart_server() {
+    local yes_no
+
+    read -p "Restart Server? (y/n): " yes_no
+
+    if [ "$yes_no" == "y" ] || [ "$yes_no" == "Y" ]; then
+        echo "Restarting Rust Server ..."
+        systemctl restart rust-server
+    fi
+}
+
 function main_menu() {
+    echo "Rust Server Configutation Tool for Xserver VPS"
+
     while true; do
         echo
         echo "1. Change Server Hostname"
@@ -173,7 +202,7 @@ function main_menu() {
             4) change_max_players ;;
             5) toggle_pve ;;
             6) activate_oxide ;;
-            q) exit 0 ;;
+            q) quit ;;
             *) echo "Invalid choice. Please try again." ;;
         esac
     done
