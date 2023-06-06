@@ -2,7 +2,7 @@
 
 declare -r CONFIG_DIR="/etc/systemd/system/rust-server.service.d"
 declare -r CONFIG_FILE="$CONFIG_DIR/override.conf"
-declare -r DEFAULT_CONFIG="/etc/systemd/system/rust-server.service"
+declare -r DEFAULT_CONFIG_FILE="/etc/systemd/system/rust-server.service"
 
 declare -r OXIDE_URL="https://umod.org/games/rust/download/develop"
 declare -r TEMP_OXIDE_FILE="/tmp/Oxide.Rust-linux.zip"
@@ -31,7 +31,7 @@ function create_default_config() {
     if [ ! -f "$CONFIG_FILE" ]; then
         echo "[Service]" > $CONFIG_FILE
         echo "ExecStart=" >> $CONFIG_FILE
-        grep -E "^ExecStart=" "$DEFAULT_CONFIG" >> "$CONFIG_FILE"
+        grep -E "^ExecStart=" "$DEFAULT_CONFIG_FILE" >> "$CONFIG_FILE"
     fi
 }
 
@@ -74,7 +74,27 @@ function update_config_param() {
     systemctl daemon-reload
 }
 
+function print_current_config_param() {
+    param="$1"
+
+    RUST_DEFULT_CONFIG="ExecStart=/home/steam/rust_server/RustDedicated -batchmode +server.hostname \"My Untitled Rust Server\" +server.level \"Procedural Map\" +server.worldsize 4500 +server.maxplayers 500 +server.pve false"
+    DEFAULT_CONFIG=$(grep -E "^ExecStart=" $DEFAULT_CONFIG_FILE)
+    OVERRIDE_CONFIG=""
+    if [ -f "$CONFIG_FILE" ]; then
+        OVERRIDE_CONFIG=$(grep -E "^ExecStart=" $CONFIG_FILE)
+    fi
+
+    line=$(echo -e -n "$RUST_DEFULT_CONFIG\n$DEFAULT_CONFIG\n$OVERRIDE_CONFIG" | grep -E " \\$param " | tail -1)
+    value=$(echo "$line" | sed -E "s/^.+ \\$param +(\"([^\"]*)\"|([^\" ]+)).*$/\\2\\3/")
+
+    echo -n $value
+}
+
 function change_hostname() {
+    echo
+    current_val=$(print_current_config_param "+server.hostname")
+    echo "Current Server Hostname: $current_val"
+
     while true; do
         read -p "Input Server Hostname: " hostname
         if [ -z "$hostname" ]; then
@@ -87,6 +107,10 @@ function change_hostname() {
 }
 
 function change_map() {
+    echo
+    current_val=$(print_current_config_param "+server.level")
+    echo "Current Map: $current_val"
+
     while true; do
         for i in "${!MAPS[@]}"; do 
             echo "$((i+1)): ${MAPS[i]}"
@@ -104,6 +128,10 @@ function change_map() {
 }
 
 function change_world_size() {
+    echo
+    current_val=$(print_current_config_param "+server.worldsize")
+    echo "Current World Size: $current_val"
+
     while true; do
         read -p "Input World Size(1000-6000): " worldsize
         if [ -z "$worldsize" ]; then
@@ -117,6 +145,10 @@ function change_world_size() {
 }
 
 function change_max_players() {
+    echo
+    current_val=$(print_current_config_param "+server.maxplayers")
+    echo "Current Max Players: $current_val"
+
     while true; do
         read -p "Input Max Players: " maxplayers
         if [ -z "$maxplayers" ]; then
@@ -131,6 +163,10 @@ function change_max_players() {
 }
 
 function toggle_pve() {
+    echo
+    current_val=$(print_current_config_param "+server.pve")
+    echo "Current PvE: $current_val"
+
     while true; do
         read -p "Enable PvE? (y/n): " pve
         if [ -z "$pve" ]; then
@@ -147,6 +183,8 @@ function toggle_pve() {
 }
 
 function activate_oxide() {
+    echo
+
     while true; do
         read -p "Activate Oxide? (y/n): " activate
         if [ -z "$activate" ]; then
@@ -163,6 +201,8 @@ function activate_oxide() {
 }
 
 function quit() {
+    echo
+
     if [ "$config_updated" == "true" ]; then
         restart_server
     fi
