@@ -42,42 +42,7 @@ function install_package() {
 		echo "Installing library ..."
 		apt-get -qq update && apt-get -qq install "$pkg"
 	fi
-
 }
-
-
-
-
-
-
-function create_default_config() {
-    mkdir -p "$CONFIG_DIR"
-
-    if [ ! -f "$CONFIG_FILE" ]; then
-        echo "[Service]" > $CONFIG_FILE
-        echo "ExecStart=" >> $CONFIG_FILE
-        grep -E "^ExecStart=" "$DEFAULT_CONFIG_FILE" >> "$CONFIG_FILE"
-    fi
-}
-
-function update_config_oxide() {
-    value="$1"
-
-    create_default_config
-
-    sed -i '/^ExecPreStart=/d' "$CONFIG_FILE"
-    if [ "$value" == "true" ]; then
-        apt-get -y -q install unzip
-        exec_pre_start="ExecPreStart=curl -sSL -o $TEMP_OXIDE_FILE $OXIDE_URL && unzip -o $TEMP_OXIDE_FILE -d $RUST_SERVER_DIR && chown -R steam:steam $RUST_SERVER_DIR/RustDedicated_Data/"
-        sed -i -E "/^ExecStart=$/i\\${exec_pre_start}" "$CONFIG_FILE"
-    fi
-
-    config_updated=true
-
-    systemctl daemon-reload
-}
-
-
 
 
 function update_server_config() {
@@ -214,6 +179,8 @@ function create_startup_script_for_bepinex() {
 
     chmod +x $STARTUP_BEPINEX_FILE
     chown steam:steam $STARTUP_BEPINEX_FILE
+
+    config_updated=true
 }
 
 function delete_startup_script_for_bepinex() {
@@ -233,12 +200,14 @@ function update_systemd_config_for_bepinex() {
     sed -i '/^ExecStart=/d' "$SYSTEMD_DROPIN_FILE"
     echo "ExecStart=$STARTUP_BEPINEX_FILE" >> "$SYSTEMD_DROPIN_FILE"
     systemctl daemon-reload
+    config_updated=true
 }
 
 function update_systemd_config_for_vanilla() {
     create_default_systemd_dropin
     sed -i '/^ExecStart=/d' "$SYSTEMD_DROPIN_FILE"
     systemctl daemon-reload
+    config_updated=true
 }
 
 function update_systemd_config_autoupdate() {
@@ -251,6 +220,7 @@ function update_systemd_config_autoupdate() {
         echo "ExecPreStart=" >> "$SYSTEMD_DROPIN_FILE"
     fi
     systemctl daemon-reload
+    config_updated=true
 }
 
 function install_bepinex_core() {
@@ -348,8 +318,8 @@ function restart_server() {
     read -p "Restart Server? (y/n): " yes_no
 
     if [ "$yes_no" == "y" ] || [ "$yes_no" == "Y" ]; then
-        echo "Restarting Rust Server ..."
-        systemctl restart rust-server
+        echo "Restarting Valheim Server ..."
+        systemctl restart valheim_server
     fi
 }
 
