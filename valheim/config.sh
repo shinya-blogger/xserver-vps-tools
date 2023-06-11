@@ -36,6 +36,14 @@ function check_bepinex_installed() {
     fi
 }
 
+function install_package() {
+    local pkg=$1
+    if ! dpkg -l | grep -q "$pkg"; then
+		echo "Installing library ..."
+		apt-get -qq update && apt-get -qq install "$pkg"
+	fi
+
+}
 
 
 
@@ -170,18 +178,26 @@ function add_admin() {
 }
 
 function download_bepinex() {
-    bepinex_url="https://thunderstore.io/package/download/denikson/BepInExPack_Valheim/5.4.2105/"
+    install_package libxml2-utils
+    bepinex_url=$(curl -so- https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/ \
+        | xmllint --xpath '//a[contains(@href,"https://thunderstore.io/package/download/denikson/BepInExPack_Valheim/")]/@href'  --html - 2> /dev/null \
+        | grep 'href=' \
+        | head -1 \
+        | sed 's/[^"]*"\([^"]*\)"[^"]*/\1/g' )
     curl -sSL -o "$TEMP_BEPINEX_FILE" "$bepinex_url"
 }
 
 function extract_bepinex() {
     local temp_dir=/tmp/$$.unzip
     
-    apt-get -y -q install unzip
+    install_package unzip
+
     unzip -qq -o "$TEMP_BEPINEX_FILE" -d "$temp_dir"
     rsync -a --remove-source-files $temp_dir/BepInExPack_Valheim/ "$VALHEIM_SERVER_DIR/"
     chown -R steam:steam "$VALHEIM_SERVER_DIR/"
+
     rm -Rf "$temp_dir"
+    rm -f "$TEMP_BEPINEX_FILE"
 }
 
 function create_startup_script_for_bepinex() {
