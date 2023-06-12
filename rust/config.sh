@@ -5,7 +5,6 @@ declare -r CONFIG_FILE="$CONFIG_DIR/override.conf"
 declare -r DEFAULT_CONFIG_FILE="/etc/systemd/system/rust-server.service"
 
 declare -r OXIDE_URL="https://umod.org/games/rust/download/develop"
-declare -r TEMP_OXIDE_FILE="/tmp/Oxide.Rust-linux.zip"
 
 declare -r RUST_SERVER_DIR="/home/steam/rust_server"
 
@@ -40,10 +39,11 @@ function update_config_oxide() {
 
     create_default_config
 
-    sed -i '/^ExecPreStart=/d' "$CONFIG_FILE"
+    sed -i '/^ExecStartPre=/d' "$CONFIG_FILE"
     if [ "$value" == "true" ]; then
-        apt-get -y -q install unzip
-        exec_pre_start="ExecPreStart=curl -sSL -o $TEMP_OXIDE_FILE $OXIDE_URL && unzip -o $TEMP_OXIDE_FILE -d $RUST_SERVER_DIR && chown -R steam:steam $RUST_SERVER_DIR/RustDedicated_Data/"
+        apt-get -y -qq install unzip
+        TEMP_OXIDE_FILE="/tmp/$$.Oxide.Rust-linux.zip"
+        exec_pre_start="ExecStartPre=bash -c 'curl -sSL -o $TEMP_OXIDE_FILE $OXIDE_URL && unzip -o $TEMP_OXIDE_FILE -d $RUST_SERVER_DIR && chown -R steam:steam $RUST_SERVER_DIR/RustDedicated_Data/; rm -f $TEMP_OXIDE_FILE'"
         sed -i -E "/^ExecStart=$/i\\${exec_pre_start}" "$CONFIG_FILE"
     fi
 
