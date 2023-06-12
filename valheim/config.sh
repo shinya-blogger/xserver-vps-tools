@@ -44,7 +44,6 @@ function install_package() {
 	fi
 }
 
-
 function update_server_config() {
     param="$1"
     value="$2"
@@ -54,11 +53,18 @@ function update_server_config() {
         value="\"$value\""
     fi
 
-    if grep -q -E "^[^#]+\/valheim_server.x86_64.* $param " "$STARTUP_VANNILA_FILE"; then
-        sed -i -E "s/^([^#]+\/valheim_server.x86_64.* $param +)(\"[^\"]*\"|[^\" ]+)/\\1$value/" "$STARTUP_VANNILA_FILE"
-    else
-        sed -i -E "s/^([^#]+\/valheim_server.x86_64.*)$/\\1 $param $value/" "$STARTUP_VANNILA_FILE"
+    files=("$STARTUP_VANNILA_FILE")
+    if [ -f "$STARTUP_BEPINEX_FILE" ]; then
+        files+=("$STARTUP_BEPINEX_FILE")
     fi
+
+    for file in "${files[@]}"; do
+        if grep -q -E "^[^#]+\/valheim_server.x86_64.* $param " "$file"; then
+            sed -i -E "s/^([^#]+\/valheim_server.x86_64.* $param +)(\"[^\"]*\"|[^\" ]+)/\\1$value/" "$file"
+        else
+            sed -i -E "s/^([^#]+\/valheim_server.x86_64.*)$/\\1 $param $value/" "$file"
+        fi
+    done
 
     config_updated=true
 }
@@ -198,6 +204,7 @@ function create_default_systemd_dropin() {
 function update_systemd_config_for_bepinex() {
     create_default_systemd_dropin
     sed -i '/^ExecStart=/d' "$SYSTEMD_DROPIN_FILE"
+    echo "ExecStart=" >> "$SYSTEMD_DROPIN_FILE"
     echo "ExecStart=$STARTUP_BEPINEX_FILE" >> "$SYSTEMD_DROPIN_FILE"
     systemctl daemon-reload
     config_updated=true
@@ -214,10 +221,10 @@ function update_systemd_config_autoupdate() {
     local autoupdate=$1
 
     create_default_systemd_dropin
-    sed -i '/^ExecPreStart=/d' "$SYSTEMD_DROPIN_FILE"
+    sed -i '/^ExecStartPre=/d' "$SYSTEMD_DROPIN_FILE"
 
     if [ "$autoupdate" == "false" ]; then
-        echo "ExecPreStart=" >> "$SYSTEMD_DROPIN_FILE"
+        echo "ExecStartPre=" >> "$SYSTEMD_DROPIN_FILE"
     fi
     systemctl daemon-reload
     config_updated=true
@@ -334,7 +341,7 @@ function main_menu() {
         echo "4. Add Admin Player"
         echo "5. Install BePinEx"
         echo "6. Uninstall BePinEx"
-        echo "7. Enable/Disable Auto-Update"
+        echo "7. Enable/Disable Auto Update"
         echo "q. Quit"
         read -p "Please enter your choice(1-8,q): " choice
 
