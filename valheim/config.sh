@@ -7,6 +7,7 @@ declare -r SYSTEMD_DROPIN_FILE="$SYSTEMD_DROPIN_DIR/override.conf"
 declare -r VALHEIM_SERVER_DIR="/home/steam/Valheim"
 declare -r VALHEIM_SERVER_CONFIG_DIR="/home/steam/.config/unity3d/IronGate/Valheim"
 declare -r VALHEIM_SERVER_ADMIN_FILE="$VALHEIM_SERVER_CONFIG_DIR/adminlist.txt"
+declare -r VALHEIM_SERVER_WORLD_DIR="$VALHEIM_SERVER_CONFIG_DIR/worlds_local"
 
 declare -r STARTUP_VANNILA_FILE="$VALHEIM_SERVER_DIR/valheim_server.sh"
 declare -r STARTUP_BEPINEX_FILE="$VALHEIM_SERVER_DIR/valheim_server_bepinex.sh"
@@ -114,6 +115,10 @@ function change_password() {
 }
 
 function change_world() {
+    echo 
+    echo "Saved Worlds:"
+    find "$VALHEIM_SERVER_WORLD_DIR" -type f -name "*.db" -a ! -name "*_backup_auto-*" -printf '%f\n' | sort | sed 's/\.db$//'
+
     echo
     current_val=$(print_current_server_config "-world")
     echo "Current World Name: $current_val"
