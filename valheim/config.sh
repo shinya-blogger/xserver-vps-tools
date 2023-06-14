@@ -253,11 +253,11 @@ function install_bepinex() {
     installed=$?
     
     if [ "$installed" == 1 ]; then
-        echo "BePinEx already installed"
+        echo "BepInEx already installed"
     fi
 
     while true; do
-        read -p "Install BePinEx? (y/n): " answer
+        read -p "Install BepInEx? (y/n): " answer
         if [ -z "$answer" ]; then
             break
         elif [ "$answer" == "y" ]; then
@@ -277,12 +277,12 @@ function uninstall_bepinex() {
     installed=$?
     
     if [ "$installed" == 0 ]; then
-        echo "BePinEx is not installed."
+        echo "BepInEx is not installed."
         return
     fi
 
     while true; do
-        read -p "Uninstall BePinEx? (y/n): " answer
+        read -p "Uninstall BepInEx? (y/n): " answer
         if [ -z "$answer" ]; then
             break
         elif [ "$answer" == "y" ]; then
@@ -344,11 +344,11 @@ function main_menu() {
         echo "2. Change Password"
         echo "3. Change World"
         echo "4. Add Admin Player"
-        echo "5. Install BePinEx"
-        echo "6. Uninstall BePinEx"
+        echo "5. Install BepInEx"
+        echo "6. Uninstall BepInEx"
         echo "7. Enable/Disable Auto Update"
         echo "q. Quit"
-        read -p "Please enter your choice(1-8,q): " choice
+        read -p "Please enter your choice(1-7,q): " choice
 
         case $choice in
             1) change_hostname ;;

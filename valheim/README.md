@@ -9,7 +9,7 @@ Xserver VPS の Valheim サーバーの設定変更を補助するスクリプ�
 - パスワード
 - ワールド
 - 管理者
-- BePinExインストール・アンインストール
+- BepInExインストール・アンインストール
 - Valheim自動バージョンアップの有効・無効
 
 ## 使い方
@@ -20,11 +20,11 @@ Xserver VPS で Valheim サーバーをインストールした後、rootでロ�
 
 ## 仕様
 
-当スクリプトは以下のファイルを作成または更新します（BePinEx本体を除く）。
+当スクリプトは以下のファイルを作成または更新します（BepInEx本体を除く）。
 
 - /home/steam/.config/unity3d/IronGate/Valheim/adminlist.txt
 - /home/steam/Valheim/valheim_server.sh
 - /home/steam/Valheim/valheim_server_bepinex.sh
 - /etc/systemd/system/valheim_server.service.d/override.conf
 
-BePinExインストール後は、valheim_serverサービスの起動スクリプトをvalheim_server_bepinex.shに変更します。
+BepInExインストール後は、valheim_serverサービスの起動スクリプトをvalheim_server_bepinex.shに変更します。
