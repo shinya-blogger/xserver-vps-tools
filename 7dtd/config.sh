@@ -52,10 +52,14 @@ function print_current_server_config() {
     echo -n $value
 }
 
+function print_server_version() {
+    (sleep 0.5s; echo "exit";) | telnet 127.0.0.1 8081 2>&1 | head | grep -E "Server version"
+}
+
 function execute_command() {
     cmd="$1"
 
-     (sleep 1s; echo "$cmd"; sleep 1s; echo "exit";) | telnet 127.0.0.1 8081 2>&1 | tail -n +17 | grep -E -v "Connection closed|TelnetClient"
+    (sleep 0.5s; echo "$cmd"; sleep 1s; echo "exit";) | telnet 127.0.0.1 8081 2>&1 | tail -n +17 | grep -E -v "Connection closed|TelnetClient"
 }
 
 function change_hostname() {
@@ -238,6 +242,8 @@ function restart_server() {
 }
 
 function main_menu() {
+    print_server_version
+
     while true; do
         echo
         echo "1. Change Server Hostname"
@@ -265,6 +271,7 @@ function main_menu() {
 }
 
 echo "7 Days to Die Server Configutation Tool for Xserver VPS"
+echo
 
 check_xserver_vps
 init
