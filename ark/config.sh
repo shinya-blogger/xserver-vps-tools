@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (C) 2023 shinya-blogger https://github.com/shinya-blogger
+# Licensed under the MIT License. See https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE
 
 function die() {
     local message=$1
