@@ -25,3 +25,17 @@ Xserver VPS で 7 Days to Die サーバーをインストールした後、root�
 
 - /home/steam/7dtd/serverconfig.xml
 - /home/steam/.local/share/7DaysToDie/Saves/serveradmin.xml
+
+
+## 解説記事
+
+以下の記事で詳しい使い方を解説しています。
+
+[https://kozenist.com/xserver-vps-7dtd-server/](https://kozenist.com/xserver-vps-7dtd-server/)
+
+
+## ライセンス
+
+MITライセンスです。
+
+[https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE](https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE)

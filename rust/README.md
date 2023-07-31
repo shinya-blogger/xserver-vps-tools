@@ -18,3 +18,16 @@ Xserver VPS で Rust サーバーをインストールした後、rootでログ�
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/shinya-blogger/xserver-vps-tools/main/rust/config.sh)"
 ```
 
+
+## 解説記事
+
+以下の記事で詳しい使い方を解説しています。
+
+[https://kozenist.com/xserver-vps-rust-server/](https://kozenist.com/xserver-vps-rust-server/)
+
+
+## ライセンス
+
+MITライセンスです。
+
+[https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE](https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE)

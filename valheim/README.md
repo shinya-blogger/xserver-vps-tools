@@ -18,6 +18,7 @@ Xserver VPS で Valheim サーバーをインストールした後、rootでロ�
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/shinya-blogger/xserver-vps-tools/main/valheim/config.sh)"
 ```
 
+
 ## 仕様
 
 当スクリプトは以下のファイルを作成または更新します（BepInEx本体を除く）。
@@ -28,3 +29,17 @@ Xserver VPS で Valheim サーバーをインストールした後、rootでロ�
 - /etc/systemd/system/valheim_server.service.d/override.conf
 
 BepInExインストール後は、valheim_serverサービスの起動スクリプトをvalheim_server_bepinex.shに変更します。
+
+
+## 解説記事
+
+以下の記事で詳しい使い方を解説しています。
+
+[https://kozenist.com/xserver-vps-valheim-server/](https://kozenist.com/xserver-vps-valheim-server/)
+
+
+## ライセンス
+
+MITライセンスです。
+
+[https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE](https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE)

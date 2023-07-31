@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (C) 2023 shinya-blogger https://github.com/shinya-blogger
+# Licensed under the MIT License. See https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE
 
 declare -r SDTD_SERVER_DIR="/home/steam/7dtd"
 declare -r SDTD_SERVER_CONFIG_FILE="$SDTD_SERVER_DIR/serverconfig.xml"

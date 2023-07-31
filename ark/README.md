@@ -21,3 +21,17 @@ Xserver VPS で ARK サーバーをインストールした後、rootでログ�
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/shinya-blogger/xserver-vps-tools/main/ark/map.sh)"
 ```
 ※同時にGameUserSettings.ini 有効化ツールも適用されます。
+
+
+## 解説記事
+
+以下の記事で詳しい使い方を解説しています。
+
+[https://kozenist.com/xserver-vps-ark-server/](https://kozenist.com/xserver-vps-ark-server/)
+
+
+## ライセンス
+
+MITライセンスです。
+
+[https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE](https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE)
