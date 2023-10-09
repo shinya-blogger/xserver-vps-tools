@@ -4,10 +4,12 @@
 
 declare -r SDTD_SERVER_DIR="/home/steam/7dtd"
 declare -r SDTD_SERVER_CONFIG_FILE="$SDTD_SERVER_DIR/serverconfig.xml"
-declare -r SDTD_SERVER_WORLD_DIR="/home/steam/.local/share/7DaysToDie/Saves"
+declare -r SDTD_SERVER_SAVE_DIR="/home/steam/.local/share/7DaysToDie/Saves"
+declare -r SDTD_SERVER_SERVER_ADMINFILE="$SDTD_SERVER_SAVE_DIR/serveradmin.xml"
 
 declare -r -a REGIONS=("NorthAmericaEast" "NorthAmericaWest" "CentralAmerica" "SouthAmerica" "Europe" "Russia" "Asia" "MiddleEast" "Africa" "Oceania")
 declare -r -a LANGUAGES=("Japanese" "Korean" "Chinese" "English")
+declare -r -a VISIBILITIES=("Not Listed" "Only Shown to Friends" "Public")
 declare -r -a DIFFICULTIES=("Scavenger" "Adventurer" "Nomad" "Warrior" "Survivalist" "Insane")
 declare -r -a WORLDS=("RWG" "Navezgane" "PREGEN6k" "PREGEN8k" "PREGEN10k")
 
@@ -140,6 +142,31 @@ function change_language() {
     done
 }
 
+function change_visibility() {
+    echo
+    for i in "${!VISIBILITIES[@]}"; do 
+        echo "$((i+0)): ${VISIBILITIES[i]}"
+    done
+
+    current_val=$(print_current_server_config "ServerVisibility")
+    echo
+    echo "Current Server Visibility: ${VISIBILITIES[$((current_val))]}"
+
+    while true; do
+        max_visibility_number=$((${#VISIBILITIES[@]} - 1))
+        read -p "Select Server Visibility(0-${max_visibility_number}): " visibility_number
+
+        if [ -z "$visibility_number" ]; then
+            break
+        elif [[ $visibility_number =~ ^[0-9]+$ ]] && [ $visibility_number -ge 0 ] && [ $visibility_number -le $max_visibility_number ]; then
+            visibility=$visibility_number
+            update_server_config "ServerVisibility" "$visibility" 
+            break
+        fi
+        echo "Invalid choice."
+    done
+}
+
 function change_difficulty() {
     echo
     for i in "${!DIFFICULTIES[@]}"; do 
@@ -186,8 +213,8 @@ function change_map() {
 
             echo 
             echo "Saved Game Names:"
-            if [ -d  "$SDTD_SERVER_WORLD_DIR/$world/" ]; then
-                find "$SDTD_SERVER_WORLD_DIR/$world/" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort
+            if [ -d  "$SDTD_SERVER_SAVE_DIR/$world/" ]; then
+                find "$SDTD_SERVER_SAVE_DIR/$world/" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort
             else
                 echo "<No game found>"
             fi
@@ -215,11 +242,32 @@ function add_admin() {
         read -p "Input Admin Player Name: " admin
         if [ -z "$admin" ]; then
             break
-        else 
+        else
             execute_command "admin add $admin 0"
             break
         fi
     done
+}
+
+function activate_control_panel() {
+    local yes_no
+
+    read -p "Activate Control Panel? (y/n): " yes_no
+
+    if [ "$yes_no" == "y" ] || [ "$yes_no" == "Y" ]; then
+        update_server_config "WebDashboardEnabled" "true"
+        update_server_config "WebDashboardPort" "8080"
+    fi
+}
+
+function deactivate_control_panel() {
+    local yes_no
+
+    read -p "Deactivate Control Panel? (y/n): " yes_no
+
+    if [ "$yes_no" == "y" ] || [ "$yes_no" == "Y" ]; then
+        update_server_config "WebDashboardEnabled" "false"
+    fi
 }
 
 function quit() {
@@ -248,24 +296,30 @@ function main_menu() {
 
     while true; do
         echo
-        echo "1. Change Server Hostname"
-        echo "2. Change Password"
-        echo "3. Change Region"
-        echo "4. Change Language"
-        echo "5. Change Game Difficulty"
-        echo "6. Change Map"
-        echo "7. Add Admin Player"
+        echo "1. Activate Control Panel"
+        echo "2. Deactivate Control Panel"
+        echo "3. Add Admin User"
+        echo "4. Change Server Hostname"
+        echo "5. Change Password"
+        echo "6. Change Region"
+        echo "7. Change Language"
+        echo "8. Change Server Visibility"
+        echo "9. Change Game Difficulty"
+        echo "10. Change Map"
         echo "q. Quit"
-        read -p "Please enter your choice(1-7,q): " choice
+        read -p "Please enter your choice(1-10,q): " choice
 
         case $choice in
-            1) change_hostname ;;
-            2) change_password ;;
-            3) change_region ;;
-            4) change_language ;;
-            5) change_difficulty ;;
-            6) change_map ;;
-            7) add_admin ;;
+            1) activate_control_panel ;;
+            2) deactivate_control_panel ;;
+            3) add_admin ;;
+            4) change_hostname ;;
+            5) change_password ;;
+            6) change_region ;;
+            7) change_language ;;
+            8) change_visibility ;;
+            9) change_difficulty ;;
+            10) change_map ;;
             q) quit ;;
             *) echo "Invalid choice. Please try again." ;;
         esac
