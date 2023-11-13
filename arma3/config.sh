@@ -8,6 +8,8 @@ declare -r SYSTEMD_OVERRIDE_CONFIG_FILE="$SYSTEMD_OVERRIDE_CONFIG_DIR/override.c
 
 declare -r SERVER_DIR="/home/steam/arma3"
 declare -r SERVER_CONFIG_FILE="$SERVER_DIR/server.cfg"
+declare -r MOD_DIR="$SERVER_DIR/mods"
+
 declare -r BATTLEYE_CONFIG_FILE="/home/steam/arma3/battleye/launch/battleye/beserver.cfg"
 
 config_updated=false
@@ -37,14 +39,15 @@ function create_systemd_override_config() {
 function update_systemd_config_param() {
     param="$1"
     value="$2"
+    escaped_value="${value//\//\\/}"
     valuetype="$3"
 
     create_systemd_override_config
 
     if grep -q -E "^ExecStart=\/.+ \"$param=" "$SYSTEMD_OVERRIDE_CONFIG_FILE"; then
-        sed -i -E "s/^(ExecStart=\/.+ \"$param=)([^\"]+)/\\1$value/" "$SYSTEMD_OVERRIDE_CONFIG_FILE"
+        sed -i -E "s/^(ExecStart=\/.+ \"$param=)([^\"]*)/\\1$escaped_value/" "$SYSTEMD_OVERRIDE_CONFIG_FILE"
     else
-        sed -i -E "s/^(ExecStart=\/.+)$/\\1 \"$param=$value\"/" "$SYSTEMD_OVERRIDE_CONFIG_FILE"
+        sed -i -E "s/^(ExecStart=\/.+)$/\\1 \"$param=$escaped_value\"/" "$SYSTEMD_OVERRIDE_CONFIG_FILE"
     fi
 
     config_updated=true
@@ -58,7 +61,7 @@ function delete_systemd_config_param() {
     create_systemd_override_config
 
     if grep -q -E "^ExecStart=\/.+ \"$param=" "$SYSTEMD_OVERRIDE_CONFIG_FILE"; then
-        sed -i -E "s/^(ExecStart=\/.+) \"$param=[^\"]+\"(.*)/\\1\\2/" "$SYSTEMD_OVERRIDE_CONFIG_FILE"
+        sed -i -E "s/^(ExecStart=\/.+) \"$param=[^\"]*\"(.*)/\\1\\2/" "$SYSTEMD_OVERRIDE_CONFIG_FILE"
         config_updated=true
         systemctl daemon-reload
     fi
@@ -74,7 +77,7 @@ function print_current_systemd_config_param() {
     fi
 
     line=$(echo -e -n "$DEFAULT_CONFIG\n$OVERRIDE_CONFIG" | grep -E "\"$param=" | tail -1)
-    value=$(echo "$line" | sed -E "s/^.+ \"$param=([^\"]+)/\\1/")
+    value=$(echo "$line" | sed -E "s/^.+ \"$param=([^\"]*)\".*$/\\1/")
 
     echo -n $value
 }
@@ -82,9 +85,10 @@ function print_current_systemd_config_param() {
 function update_server_config_param() {
     param="$1"
     value="$2"
+    escaped_value="${value//\//\\/}"
 
     if grep -q -E "^$param *=" "$SERVER_CONFIG_FILE"; then
-        sed -i -E "s/(^$param *= *\")([^\"]*)\"/\\1$value\"/" "$SERVER_CONFIG_FILE"
+        sed -i -E "s/(^$param *= *\")([^\"]*)\"/\\1$escaped_value\"/" "$SERVER_CONFIG_FILE"
     else
         echo "$param = \"$value\";" >> $SERVER_CONFIG_FILE
     fi
@@ -218,6 +222,83 @@ function deactivate_rcon() {
         fi
         echo "Invalid choice."
     done
+}
+
+function enable_mods() {
+    echo
+
+    if [ ! -d "$MOD_DIR" ]; then
+        mkdir -p "$MOD_DIR"
+        chown steam:steam "$MOD_DIR"
+    fi
+
+    installed_mods=()
+    mod_count=0
+
+    for dir in "$MOD_DIR"/*; do
+        if [ -d "$dir" ]; then
+            ((mod_count++))
+            dir_name=$(basename "$dir")
+            installed_mods+=("mods/$dir_name")
+        fi
+    done
+
+    echo "Mod directory: $MOD_DIR"
+    echo "Number of mods installed: $mod_count"
+
+    while true; do
+        echo
+
+        mod_param=`print_current_systemd_config_param "-mod"`
+        IFS=';' read -ra enabled_mods <<< "$mod_param"
+
+        counter=1
+        for dir in "$MOD_DIR"/*; do
+            if [ -d "$dir" ]; then
+
+                dir_name=$(basename "$dir")
+
+                status="Disabled"
+
+                for enabled_mod in "${enabled_mods[@]}"; do
+                    if [[ "$enabled_mod" == *"mods/$dir_name" ]]; then
+                        status="Enabled"
+                        break
+                    fi
+                done
+
+                echo "$counter. $dir_name - $status"
+
+                ((counter++))
+            fi
+        done
+        echo "q. Quit"
+
+        read -p "Select number of mod to enable/disable(1-${mod_count},q): " mod_number
+        if [ -z "$mod_number" ]; then
+            break
+        elif [ "$mod_number" == "q" ]; then
+            break
+        elif [[ $mod_number =~ ^[0-9]+$ ]] && [ $mod_number -ge 1 ] && [ $mod_number -le ${mod_count} ]; then
+            mod="${installed_mods[$((mod_number-1))]}"
+            if printf '%s\n' "${enabled_mods[@]}" | grep -qx "$mod"; then
+                enabled_mods=( $( printf "%s\n" "${enabled_mods[@]}" | grep -vx "$mod" ) )
+            else
+                enabled_mods+=("$mod")
+            fi
+            enabled_mods=( $( printf "%s\n" "${enabled_mods[@]}" | sort ) )
+            mod_param=$(IFS=';'; echo "${enabled_mods[*]}")
+            if [ "$mod_param" == "" ]; then
+                delete_systemd_config_param "-mod"
+            else
+                update_systemd_config_param "-mod" "$mod_param" "string"
+            fi
+        else    
+            echo "Invalid choice."
+        fi
+        
+    done
+
 }
 
 function quit() {
