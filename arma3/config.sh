@@ -301,6 +301,43 @@ function enable_mods() {
 
 }
 
+function update_server() {
+    echo
+
+    while true; do
+        read -p "Update Arma3 Server? (y/n): " update
+        if [ -z "$update" ]; then
+            return
+        elif [ "$update" == "y" ]; then
+            break
+        elif [ "$update" == "n" ]; then
+            return
+        fi
+        echo "Invalid choice."
+    done
+
+    read -p "Input steam account: " steam_account
+    if [ -z "$steam_account" ]; then
+        return
+    fi
+
+    read -p "Input steam password: " steam_password
+    if [ -z "$steam_password" ]; then
+        return
+    fi
+
+    echo
+    echo "Stopping Arma 3 Server ..."
+    systemctl stop arma3-server
+
+    echo
+    sudo -u steam /usr/games/steamcmd +@sSteamCmdForcePlatformType linux +force_install_dir /home/steam/arma3 +login ${steam_account} ${steam_password} +app_update 233780 +quit
+
+    echo
+    echo "Starting Arma 3 Server ..."
+    systemctl start arma3-server
+}
+
 function quit() {
     echo
 
