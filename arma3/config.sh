@@ -237,8 +237,11 @@ function enable_mods() {
 
     for dir in "$MOD_DIR"/*; do
         if [ -d "$dir" ]; then
-            ((mod_count++))
             dir_name=$(basename "$dir")
+            if [[ "$dir_name" == *" "* ]]; then
+                continue
+            fi
+            ((mod_count++))
             installed_mods+=("mods/$dir_name")
         fi
     done
@@ -253,24 +256,21 @@ function enable_mods() {
         IFS=';' read -ra enabled_mods <<< "$mod_param"
 
         counter=1
-        for dir in "$MOD_DIR"/*; do
-            if [ -d "$dir" ]; then
+        for installed_mod in "${installed_mods[@]}"; do
+            dir_name=$(basename "$installed_mod")
 
-                dir_name=$(basename "$dir")
+            status="Disabled"
 
-                status="Disabled"
+            for enabled_mod in "${enabled_mods[@]}"; do
+                if [[ "$enabled_mod" == *"$installed_mod" ]]; then
+                    status="Enabled"
+                    break
+                fi
+            done
 
-                for enabled_mod in "${enabled_mods[@]}"; do
-                    if [[ "$enabled_mod" == *"mods/$dir_name" ]]; then
-                        status="Enabled"
-                        break
-                    fi
-                done
+            echo "$counter. $dir_name - $status"
 
-                echo "$counter. $dir_name - $status"
-
-                ((counter++))
-            fi
+            ((counter++))
         done
         echo "q. Quit"
 
@@ -285,6 +285,7 @@ function enable_mods() {
                 enabled_mods=( $( printf "%s\n" "${enabled_mods[@]}" | grep -vx "$mod" ) )
             else
                 enabled_mods+=("$mod")
+                chown -R steam:steam "${SERVER_DIR}/${mod}"
             fi
             enabled_mods=( $( printf "%s\n" "${enabled_mods[@]}" | sort ) )
             mod_param=$(IFS=';'; echo "${enabled_mods[*]}")
