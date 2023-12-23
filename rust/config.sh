@@ -43,6 +43,7 @@ function update_config_oxide() {
 
     sed -i '/^ExecStartPre=/d' "$CONFIG_FILE"
     if [ "$value" == "true" ]; then
+        export DEBIAN_FRONTEND=noninteractive
         apt-get -y -qq install unzip
         TEMP_OXIDE_FILE="/tmp/$$.Oxide.Rust-linux.zip"
         exec_pre_start="ExecStartPre=bash -c 'curl -sSL -o $TEMP_OXIDE_FILE $OXIDE_URL && unzip -o $TEMP_OXIDE_FILE -d $RUST_SERVER_DIR && chown -R steam:steam $RUST_SERVER_DIR/RustDedicated_Data/; rm -f $TEMP_OXIDE_FILE'"
