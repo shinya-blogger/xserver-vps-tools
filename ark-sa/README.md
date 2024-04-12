@@ -26,6 +26,15 @@ Xserver VPS で Ubuntu 22.04 (64bit) をインストールした後、rootでロ
 
 ## ライセンス
 
-MITライセンスです。
+AGPL-3（GNU Affero General Public License version 3）ライセンスです。
 
-[https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE](https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE)
+[https://github.com/shinya-blogger/xserver-vps-tools/blob/main/ark-sa/LICENSE](https://github.com/shinya-blogger/xserver-vps-tools/blob/main/ark-sa/LICENSE)
+
+
+
+## 関連プロジェクト
+
+当インストーラーでは、以下のプロジェクトのシェルスクリプトを利用しています。
+
+Tools for managing ARK Survival Ascended on Linux
+[https://github.com/cdp1337/ARKSurvivalAscended-Linux]https://github.com/cdp1337/ARKSurvivalAscended-Linux
