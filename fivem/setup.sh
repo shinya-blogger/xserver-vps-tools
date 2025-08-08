@@ -98,7 +98,6 @@ function update_server() {
         return
     fi
     
-    # --- 修正点: アップデート承認後にサーバー状態を確認 ---
     local server_was_running=false
     if systemctl is-active --quiet "$FIVEM_SERVICE_NAME"; then
         server_was_running=true
@@ -112,7 +111,6 @@ function update_server() {
         echo "Stopping FiveM server..."
         systemctl stop "$FIVEM_SERVICE_NAME"
     fi
-    # --- 修正ここまで ---
 
     echo "Finding exact download URL ..."
     local download_path
@@ -120,7 +118,6 @@ function update_server() {
 
     if [ -z "$download_path" ]; then
         echo "Failed to find the download path. The artifact page structure might have changed."
-        # もしサーバーを停止させていたら、再起動して終了する
         if [ "$server_was_running" == "true" ]; then
             echo "Restarting the FiveM server..."
             systemctl start "$FIVEM_SERVICE_NAME"
