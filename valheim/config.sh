@@ -119,19 +119,32 @@ function change_password() {
 function change_world() {
     echo 
     echo "Saved Worlds:"
-    find "$VALHEIM_SERVER_WORLD_DIR" -type f -name "*.db" -a ! -name "*_backup_auto-*" -printf '%f\n' | sort | sed 's/\.db$//'
+    
+    local worlds=()
+    while IFS= read -r line; do
+        [ -n "$line" ] && worlds+=("$line")
+    done < <(find "$VALHEIM_SERVER_WORLD_DIR" -maxdepth 1 -type f -name "*.db" -a ! -name "*_backup_auto-*" -printf '%f\n' | sort | sed 's/\.db$//')
+
+    local i=1
+    for world in "${worlds[@]}"; do
+        echo "$i. $world"
+        ((i++))
+    done
 
     echo
     current_val=$(print_current_server_config "-world")
     echo "Current World Name: $current_val"
 
     while true; do
-        read -p "Input World Name: " world
-        if [ -z "$world" ]; then
+        read -p "Select World Number (Enter to cancel): " selection
+        if [ -z "$selection" ]; then
+            break
+        elif [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#worlds[@]}" ]; then
+            local selected_world="${worlds[$((selection-1))]}"
+            update_server_config "-world" "$selected_world" "string"
             break
         else
-            update_server_config "-world" "$world" "string"
-            break
+            echo "Invalid selection. Please enter a number between 1 and ${#worlds[@]}."
         fi
     done
 }
