@@ -50,8 +50,8 @@ function check_pin() {
     fi
 
     local pin_info
-    pin_info=$(grep PIN "$FIVEM_CONSOLE_LOG" | tail -1)
-
+    pin_info=$(grep --after=1 PIN "$FIVEM_CONSOLE_LOG" | tail -2)
+    
     if [ -n "$pin_info" ]; then
         echo "--- Found PIN ---"
         echo "$pin_info"
