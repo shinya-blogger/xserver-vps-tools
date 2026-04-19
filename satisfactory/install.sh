@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2024 shinya-blogger https://github.com/shinya-blogger
+# Copyright (C) 2024-2026 shinya-blogger https://github.com/shinya-blogger
 # Licensed under the MIT License. See https://github.com/shinya-blogger/xserver-vps-tools/blob/main/LICENSE
 
 USERNAME=sfserver
@@ -37,7 +37,7 @@ EOL
     apt upgrade -qq -y -o Dpkg::Options::="--force-confold"
 
     echo "Installing necessary dependencies..."
-    apt install -qq -y curl wget file tar bzip2 gzip unzip bsdmainutils python3 util-linux ca-certificates binutils bc jq tmux netcat lib32gcc-s1 lib32stdc++6 libsdl2-2.0-0:i386 
+    apt install -qq -y curl wget file tar bzip2 gzip unzip bsdmainutils python3 util-linux ca-certificates binutils bc jq tmux netcat lib32gcc-s1 lib32stdc++6 libsdl2-2.0-0:i386 pigz
 
     echo steam steam/license note '' | sudo debconf-set-selections
     echo steam steam/question select "I AGREE" | sudo debconf-set-selections
