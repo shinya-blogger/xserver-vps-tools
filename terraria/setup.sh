@@ -10,6 +10,7 @@ declare -r TMODLOADER_CONF_DIR="$TMODLOADER_BASE_DIR/conf"
 declare -r TMODLOADER_SAVES_DIR="$TMODLOADER_BASE_DIR/saves"
 declare -r TMODLOADER_WORLDS_DIR="$TMODLOADER_SAVES_DIR/Worlds"
 declare -r TMODLOADER_CONF_FILE="$TMODLOADER_CONF_DIR/serverconfig.txt"
+declare -r VANILLA_BASE_DIR="/opt/terraria"
 declare -r TERRARIA_USER="terraria"
 declare -r VANILLA_SERVER_SERVICE="terraria_server"
 declare -r VANILLA_AUTOSAVE_SERVICE="terraria_autosave"
@@ -17,6 +18,11 @@ declare -r VANILLA_AUTOSAVE_SERVICE="terraria_autosave"
 config_updated=false
 
 # --- Utility Functions ---
+function check_xserver_vps() {
+    if [ ! -d "$VANILLA_BASE_DIR" ] || ! id "$TERRARIA_USER" &> /dev/null; then
+        die "This server is not a Terraria Server by Xserver VPS."
+    fi
+}
 
 function die() {
     echo "ERROR: $1"
@@ -170,6 +176,9 @@ function install_tmodloader() {
     echo "Copying and configuring serverconfig.txt..."
     cp "$TMODLOADER_SERVER_DIR/serverconfig.txt" "$TMODLOADER_CONF_FILE"
     {
+        echo "worldname=world"
+        echo "worldpath=$TMODLOADER_WORLDS_DIR"
+        echo "world=$TMODLOADER_WORLDS_DIR/world.wld"
         echo "difficulty=0"
         echo "autocreate=1"
     } >> "$TMODLOADER_CONF_FILE"
@@ -336,15 +345,17 @@ function main_menu() {
         echo
         if is_tmodloader_installed; then
             echo "--- Terraria Server Management Menu ---"
-            echo "1. Update tModLoader"
-            echo "2. Uninstall tModLoader"
-            echo "3. Change World"
+            echo "1. Change World"
+            echo "2. Restart tModLoader"
+            echo "3. Update tModLoader"
+            echo "4. Uninstall tModLoader"
             echo "q. Quit"
-            read -p "Please enter your choice (1-3, q): " choice
+            read -p "Please enter your choice (1-4, q): " choice
             case $choice in
-                1) update_tmodloader ;;
-                2) uninstall_tmodloader ;;
-                3) change_world ;;
+                1) change_world ;;
+                2) restart_server ;;
+                3) update_tmodloader ;;
+                4) uninstall_tmodloader ;;
                 q) quit ;;
                 *) echo "Invalid choice. Please try again." ;;
             esac
@@ -367,6 +378,7 @@ function main_menu() {
 if [ "$(id -u)" -ne 0 ]; then
     die "This script must be run as root."
 fi
+check_xserver_vps
 
 echo "Terraria Server Management Tool for Xserver VPS"
 
