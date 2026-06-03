@@ -11,6 +11,10 @@ declare -r TMODLOADER_SAVES_DIR="$TMODLOADER_BASE_DIR/saves"
 declare -r TMODLOADER_WORLDS_DIR="$TMODLOADER_SAVES_DIR/Worlds"
 declare -r TMODLOADER_CONF_FILE="$TMODLOADER_CONF_DIR/serverconfig.txt"
 declare -r VANILLA_BASE_DIR="/opt/terraria"
+declare -r VANILLA_SERVER_DIR="$VANILLA_BASE_DIR/server"
+declare -r VANILLA_CONF_DIR="$VANILLA_BASE_DIR/conf"
+declare -r VANILLA_CONF_FILE="$VANILLA_CONF_DIR/serverconfig.txt"
+declare -r VANILLA_WORLDS_DIR="$VANILLA_BASE_DIR/Worlds"
 declare -r TERRARIA_USER="terraria"
 declare -r VANILLA_SERVER_SERVICE="terraria_server"
 declare -r VANILLA_AUTOSAVE_SERVICE="terraria_autosave"
@@ -330,6 +334,181 @@ function restart_server() {
     fi
 }
 
+# --- Vanilla-specific Helpers ---
+
+function get_vanilla_serverconfig() {
+    local key="$1"
+    grep "^$key=" "$VANILLA_CONF_FILE" 2>/dev/null | tail -1 | cut -d= -f2-
+}
+
+function update_vanilla_serverconfig() {
+    local key="$1"
+    local value="$2"
+    if grep -q "^$key=" "$VANILLA_CONF_FILE"; then
+        sed -i "s|^$key=.*|$key=$value|" "$VANILLA_CONF_FILE"
+    else
+        echo "$key=$value" >> "$VANILLA_CONF_FILE"
+    fi
+}
+
+function get_vanilla_current_version() {
+    grep -oP '(?<=/opt/terraria/server/)\d+(?=/)' /etc/systemd/system/terraria_server.service 2>/dev/null | head -1
+}
+
+function get_vanilla_latest_url() {
+    install_package "curl"
+    # ファイル名の数字を1桁ずつドット区切りに変換してバージョン比較する
+    # 例: terraria-server-1456.zip -> 1.4.5.6, terraria-server-14481.zip -> 1.4.4.8.1
+    local url
+    url=$(curl -fsSL "https://terraria.wiki.gg/wiki/Server" 2>/dev/null \
+        | grep -oP 'https://terraria\.org/api/download/pc-dedicated-server/terraria-server-\d+\.zip' \
+        | sort -u \
+        | while IFS= read -r u; do
+            local ver dot_ver
+            ver=$(basename "$u" .zip | grep -oP '\d+$')
+            dot_ver=$(echo "$ver" | sed 's/./&./g; s/\.$//')
+            echo "$dot_ver $u"
+          done \
+        | sort -V | tail -1 | cut -d' ' -f2-)
+    echo "$url"
+}
+
+# --- Vanilla Feature Functions ---
+
+function update_vanilla() {
+    echo
+    install_package "unzip"
+
+    echo "Fetching latest Terraria server version..."
+    local latest_url
+    latest_url=$(get_vanilla_latest_url)
+    if [ -z "$latest_url" ]; then
+        die "Could not determine the latest Terraria server URL. Check your internet connection."
+    fi
+
+    local zip_name
+    zip_name=$(basename "$latest_url")
+    local new_version
+    new_version=$(echo "$zip_name" | grep -oP '\d+(?=\.zip)')
+    echo "Latest version: $new_version"
+
+    local current_version
+    current_version=$(get_vanilla_current_version)
+    if [ "$current_version" == "$new_version" ]; then
+        echo "Already up to date (version $new_version)."
+        return
+    fi
+
+    local yes_no
+    read -p "Update Vanilla server from $current_version to $new_version? The server will be stopped. (y/n): " yes_no
+    if [[ "$yes_no" != "y" ]] && [[ "$yes_no" != "Y" ]]; then
+        echo "Update cancelled."
+        return
+    fi
+
+    echo "Stopping Terraria services..."
+    systemctl stop "${VANILLA_AUTOSAVE_SERVICE}.timer" 2>/dev/null || true
+    systemctl stop "${VANILLA_SERVER_SERVICE}.service" 2>/dev/null || true
+
+    local tmp_zip="/tmp/$zip_name"
+    echo "Downloading $latest_url..."
+    wget -qO "$tmp_zip" "$latest_url" || die "Failed to download Terraria server."
+
+    echo "Extracting to $VANILLA_SERVER_DIR/..."
+    unzip -o "$tmp_zip" -d "$VANILLA_SERVER_DIR" || die "Failed to extract archive."
+    chmod -R 755 "$VANILLA_SERVER_DIR"
+    chown -R "$TERRARIA_USER:$TERRARIA_USER" "$VANILLA_SERVER_DIR"
+
+    if [ -n "$current_version" ]; then
+        echo "Updating service file ($current_version -> $new_version)..."
+        sed -i "s|$current_version|$new_version|g" /etc/systemd/system/terraria_server.service
+    else
+        echo "WARNING: Could not detect current version in service file. Please update it manually if needed."
+    fi
+
+    echo "Generating initial config..."
+    echo exit | sudo -u "$TERRARIA_USER" \
+        "$VANILLA_SERVER_DIR/$new_version/Linux/TerrariaServer.bin.x86_64" \
+        -config "$VANILLA_CONF_DIR/serverconfig_init.txt" 2>/dev/null || true
+
+    echo "Starting Terraria services..."
+    systemctl daemon-reload
+    systemctl start "${VANILLA_SERVER_SERVICE}.service" || die "Failed to start terraria_server. Check: journalctl -u ${VANILLA_SERVER_SERVICE}"
+    systemctl start "${VANILLA_AUTOSAVE_SERVICE}.timer"
+
+    echo "Removing old version..."
+    rm -Rf "$VANILLA_SERVER_DIR/$current_version"
+
+    echo "Removing downloaded archive..."
+    rm -f "$tmp_zip"
+
+    echo
+    echo "Vanilla Terraria server updated to version $new_version successfully."
+}
+
+function restart_vanilla() {
+    local yes_no
+    read -p "Restart Vanilla Terraria Server? (y/n): " yes_no
+    if [[ "$yes_no" == "y" ]] || [[ "$yes_no" == "Y" ]]; then
+        echo "Restarting Vanilla Terraria server..."
+        systemctl restart "${VANILLA_SERVER_SERVICE}.service"
+        echo "Server restarted."
+    fi
+}
+
+function change_world_vanilla() {
+    echo
+
+    local worlds_dir
+    worlds_dir=$(get_vanilla_serverconfig "worldpath")
+    [ -z "$worlds_dir" ] && worlds_dir="$VANILLA_WORLDS_DIR"
+
+    local worlds=()
+    while IFS= read -r line; do
+        [ -n "$line" ] && worlds+=("$line")
+    done < <(find "$worlds_dir" -maxdepth 1 -type f -name "*.wld" 2>/dev/null | sort)
+
+    if [ "${#worlds[@]}" -eq 0 ]; then
+        echo "No world files found in $worlds_dir"
+        return
+    fi
+
+    echo "Available Worlds:"
+    local i=1
+    for world in "${worlds[@]}"; do
+        echo "$i. $(basename "$world")"
+        ((i++))
+    done
+
+    echo
+    local current_world
+    current_world=$(get_vanilla_serverconfig "world")
+    echo "Current World: ${current_world:-<not set>}"
+
+    while true; do
+        read -p "Select World Number (Enter to cancel): " selection
+        if [ -z "$selection" ]; then
+            break
+        elif [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#worlds[@]}" ]; then
+            local selected_world="${worlds[$((selection-1))]}"
+            local world_name
+            world_name=$(basename "$selected_world" .wld)
+            update_vanilla_serverconfig "world" "$selected_world"
+            update_vanilla_serverconfig "worldname" "$world_name"
+            echo "World set to: $selected_world"
+            local restart_yn
+            read -p "Restart server to apply the change? (y/n): " restart_yn
+            if [[ "$restart_yn" == "y" ]] || [[ "$restart_yn" == "Y" ]]; then
+                systemctl restart "${VANILLA_SERVER_SERVICE}.service"
+                echo "Server restarted."
+            fi
+            break
+        else
+            echo "Invalid selection. Please enter a number between 1 and ${#worlds[@]}."
+        fi
+    done
+}
+
 function quit() {
     echo
     if [ "$config_updated" == "true" ]; then
@@ -361,11 +540,17 @@ function main_menu() {
             esac
         else
             echo "--- Terraria Server Management Menu ---"
-            echo "1. Install tModLoader"
+            echo "1. Update Vanilla Server"
+            echo "2. Restart Vanilla Server"
+            echo "3. Change World"
+            echo "4. Install tModLoader"
             echo "q. Quit"
-            read -p "Please enter your choice (1, q): " choice
+            read -p "Please enter your choice (1-4, q): " choice
             case $choice in
-                1) install_tmodloader ;;
+                1) update_vanilla ;;
+                2) restart_vanilla ;;
+                3) change_world_vanilla ;;
+                4) install_tmodloader ;;
                 q) quit ;;
                 *) echo "Invalid choice. Please try again." ;;
             esac
@@ -385,6 +570,10 @@ echo "Terraria Server Management Tool for Xserver VPS"
 if is_tmodloader_installed; then
     version=$(get_tmodloader_version)
     echo "tModLoader version: $version"
+    echo
+else
+    version=$(get_vanilla_current_version)
+    echo "Terraria version: $version"
     echo
 fi
 
